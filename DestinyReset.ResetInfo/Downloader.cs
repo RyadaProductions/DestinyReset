@@ -7,7 +7,6 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Timers;
-using Microsoft.Extensions.Logging;
 
 namespace DestinyReset.ResetInfo
 {
@@ -18,8 +17,6 @@ namespace DestinyReset.ResetInfo
         private const string DailyGid = "0";
         private const double DownloadInterval = 300000;
         
-        private readonly ILogger<Downloader> _logger;
-        
         private Timer _downloadTimer;
 
         public List<WeeklyReset> WeeklyResets { get; } = new List<WeeklyReset>();
@@ -27,19 +24,13 @@ namespace DestinyReset.ResetInfo
         
         public WeeklyReset CurrentReset { get; private set; }
 
-        public Downloader(ILogger<Downloader> logger)
-        {
-            _logger = logger;
-        }
 
         public async Task StartAutomaticDownloaderAsync()
         {
             if (_downloadTimer?.Enabled ?? false) return;
 
-            _logger.LogInformation($"Starting initial download of the spreadsheet");
             await DownloadWeeklyAndDailyResetsAsync();
             
-            _logger.LogInformation($"Starting download timer with an interval of: {DownloadInterval}");
             _downloadTimer = new Timer(DownloadInterval);
             _downloadTimer.Elapsed += async (sender, args) => await DownloadWeeklyAndDailyResetsAsync();
             _downloadTimer.Enabled = true;
@@ -47,7 +38,6 @@ namespace DestinyReset.ResetInfo
 
         private void SetCurrentReset()
         {
-            _logger.LogInformation($"Setting current reset.");
             var currentResetDay = CalculateCurrentReset(DateTime.Today);
 
             CurrentReset = WeeklyResets.First(x => x.Reset.Date == currentResetDay.Date);
