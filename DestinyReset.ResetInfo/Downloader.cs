@@ -62,7 +62,7 @@ namespace DestinyReset.ResetInfo
         private WeeklyReset RowToWeeklyReset(string[] values)
         {
             for (var i = 0; i < values.Length; i++)
-                if (string.IsNullOrWhiteSpace(values[i])) 
+                if (string.IsNullOrWhiteSpace(values[i]))
                     values[i] = "Unknown";
 
             return new WeeklyReset()

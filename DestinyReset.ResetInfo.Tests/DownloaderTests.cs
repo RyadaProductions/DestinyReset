@@ -3,22 +3,23 @@ using System.Threading.Tasks;
 
 namespace DestinyReset.ResetInfo.Tests
 {
-  public class DownloaderTests
-  {
-    private Downloader _info;
-
-    [SetUp]
-    public void Setup()
+    public class DownloaderTests
     {
-      _info = new Downloader();
-    }
+        private Downloader _info;
 
-    [Test]
-    public async Task DoesDownloadWeeklyAndDailyResetsAsyncCompleteWithoutException()
-    {
-      await _info.DownloadWeeklyAndDailyResetsAsync();
+        [SetUp]
+        public void Setup()
+        {
+            _info = new Downloader();
+        }
 
-      Assert.IsTrue(true);
+        [Test]
+        public async Task DoesDownloadWeeklyAndDailyResetsAsyncCompleteWithoutException()
+        {
+            await _info.DownloadWeeklyAndDailyResetsAsync();
+
+            Assert.IsTrue(_info.WeeklyResets.Count != 0);
+            Assert.IsTrue(_info.DailyResets.Count != 0);
+        }
     }
-  }
 }
