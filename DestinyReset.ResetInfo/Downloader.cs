@@ -6,34 +6,73 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using System.Timers;
+using Microsoft.Extensions.Logging;
 
 namespace DestinyReset.ResetInfo
 {
     public class Downloader : IDownloader
     {
-        private const string _downloadUrl = @"https://docs.google.com/spreadsheets/d/e/2PACX-1vSOSn3UC6NoaI8N0L1Ysh3L5_HZa5aPgnO6KBhKFEE5IWofAlVmpkVSFiJsOOHUJGwDH7Z8pYO_NADT/pub?output=csv&gid=";
-        private const string _weeklyGid = "968294774";
-        private const string _dailyGid = "0";
+        private const string DownloadUrl = @"https://docs.google.com/spreadsheets/d/e/2PACX-1vSOSn3UC6NoaI8N0L1Ysh3L5_HZa5aPgnO6KBhKFEE5IWofAlVmpkVSFiJsOOHUJGwDH7Z8pYO_NADT/pub?output=csv&gid=";
+        private const string WeeklyGid = "968294774";
+        private const string DailyGid = "0";
+        private const double DownloadInterval = 300000;
+        
+        private readonly ILogger<Downloader> _logger;
+        
+        private Timer _downloadTimer;
 
         public List<WeeklyReset> WeeklyResets { get; } = new List<WeeklyReset>();
         public List<DailyReset> DailyResets { get; } = new List<DailyReset>();
+        
+        public WeeklyReset CurrentReset { get; private set; }
 
-        public async Task DownloadWeeklyAndDailyResetsAsync()
+        public Downloader(ILogger<Downloader> logger)
         {
-            WeeklyResets.Clear();
-            await DownloadResetsAsync("weekly", _weeklyGid, WeeklyResets, RowToWeeklyReset);
-            DailyResets.Clear();
-            await DownloadResetsAsync("daily", _dailyGid, DailyResets, RowToDailyReset);
+            _logger = logger;
         }
 
-        private async Task DownloadResetsAsync<T>(string suffix, string gid, List<T> list, Func<string[], T> parseMethod)
+        public async Task StartAutomaticDownloaderAsync()
         {
-            var request = WebRequest.Create(_downloadUrl + gid);
+            if (_downloadTimer?.Enabled ?? false) return;
+
+            _logger.LogInformation($"Starting initial download of the spreadsheet");
+            await DownloadWeeklyAndDailyResetsAsync();
+            
+            _logger.LogInformation($"Starting download timer with an interval of: {DownloadInterval}");
+            _downloadTimer = new Timer(DownloadInterval);
+            _downloadTimer.Elapsed += async (sender, args) => await DownloadWeeklyAndDailyResetsAsync();
+            _downloadTimer.Enabled = true;
+        }
+
+        private void SetCurrentReset()
+        {
+            _logger.LogInformation($"Setting current reset.");
+            var currentResetDay = CalculateCurrentReset(DateTime.Today);
+
+            CurrentReset = WeeklyResets.First(x => x.Reset.Date == currentResetDay.Date);
+        }
+
+        private static DateTime CalculateCurrentReset(DateTime currentDay)
+        {
+            return currentDay.AddDays(-(int)currentDay.AddDays(-(int)DayOfWeek.Tuesday).DayOfWeek);
+        }
+        
+        public async Task DownloadWeeklyAndDailyResetsAsync()
+        {
+            await DownloadResetsAsync(WeeklyGid, WeeklyResets, RowToWeeklyReset);
+            await DownloadResetsAsync(DailyGid, DailyResets, RowToDailyReset);
+            SetCurrentReset();
+        }
+
+        private static async Task DownloadResetsAsync<T>(string gid, List<T> list, Func<string[], T> parseMethod)
+        {
+            var request = WebRequest.Create(DownloadUrl + gid);
             request.Credentials = CredentialCache.DefaultCredentials;
 
             var response = await request.GetResponseAsync();
 
-            using var stream = response.GetResponseStream();
+            await using var stream = response.GetResponseStream();
             using var reader = new StreamReader(stream);
 
             var responseString = await reader.ReadToEndAsync();
@@ -41,13 +80,15 @@ namespace DestinyReset.ResetInfo
             ParseValuesToResets(responseString, list, parseMethod);
         }
 
-        private void ParseValuesToResets<T>(string csvTable, List<T> list, Func<string[], T> parseMethod)
+        private static void ParseValuesToResets<T>(string csvTable, List<T> list, Func<string[], T> parseMethod)
         {
             var table = csvTable.Split(Environment.NewLine);
 
             // Skip the header
             var dataRows = table.Skip(2);
 
+            list.Clear();
+            
             foreach (var line in dataRows)
             {
                 var values = line.Split(',');
@@ -59,7 +100,7 @@ namespace DestinyReset.ResetInfo
             }
         }
 
-        private WeeklyReset RowToWeeklyReset(string[] values)
+        private static WeeklyReset RowToWeeklyReset(string[] values)
         {
             for (var i = 0; i < values.Length; i++)
                 if (string.IsNullOrWhiteSpace(values[i]))
@@ -109,7 +150,7 @@ namespace DestinyReset.ResetInfo
             };
         }
 
-        private DailyReset RowToDailyReset(string[] values)
+        private static DailyReset RowToDailyReset(string[] values)
         {
             return new DailyReset()
             {
@@ -130,14 +171,6 @@ namespace DestinyReset.ResetInfo
                 Forge = values[11],
                 AlterWeapon = values[13]
             };
-        }
-
-        private StreamWriter CreateFile(string id)
-        {
-            var desktopFolder = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
-            var fullFileName = Path.Combine(desktopFolder, $"Resets_{id}.json");
-
-            return new StreamWriter(fullFileName);
         }
     }
 }

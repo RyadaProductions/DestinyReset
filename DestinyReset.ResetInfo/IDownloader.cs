@@ -8,7 +8,10 @@ namespace DestinyReset.ResetInfo
     {
         List<WeeklyReset> WeeklyResets { get; }
         List<DailyReset> DailyResets { get; }
+        
+        WeeklyReset CurrentReset { get; }
 
+        Task StartAutomaticDownloaderAsync();
         Task DownloadWeeklyAndDailyResetsAsync();
     }
 }

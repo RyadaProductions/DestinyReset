@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using System.Threading.Tasks;
+using NUnit.Framework.Internal;
 
 namespace DestinyReset.ResetInfo.Tests
 {
@@ -10,7 +11,8 @@ namespace DestinyReset.ResetInfo.Tests
         [SetUp]
         public void Setup()
         {
-            _info = new Downloader();
+            // Check how to unit test with the logging abstraction from .NET
+            //_info = new Downloader();
         }
 
         [Test]
