@@ -29,10 +29,15 @@ jobs:
       - name: Publish .NET Core Project
         run: dotnet publish DestinyReset/DestinyReset.csproj -c Release -o release --nologo
 
+      # add .nojekyll file to tell GitHub pages to not treat this as a Jekyll project. (Allow files and folders starting with an underscore)
+      - name: Add .nojekyll file
+        run: touch release/wwwroot/.nojekyll
+      
+
       # Commit to Github Pages
       - name: Commit wwroot to Github Pages
         uses: JamesIves/github-pages-deploy-action@3.5.9
         with: 
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: gh-pages
-          FOLDER: DestinyReset/release/wwroot
+          FOLDER: release/wwroot
