@@ -33,6 +33,9 @@ jobs:
       - name: Add .nojekyll file
         run: touch release/wwwroot/.nojekyll
       
+      # Debug
+      - name: Debug
+        run: ls
 
       # Commit to Github Pages
       - name: Commit wwroot to Github Pages
