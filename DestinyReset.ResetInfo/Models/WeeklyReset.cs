@@ -1,11 +1,9 @@
 ﻿using System;
-using System.ComponentModel.DataAnnotations;
 
 namespace DestinyReset.ResetInfo.Models
 {
     public class WeeklyReset
     {
-        [DataType(DataType.Date)]
         public DateTime Reset { get; set; }
 
         public string Flashpoint { get; set; }

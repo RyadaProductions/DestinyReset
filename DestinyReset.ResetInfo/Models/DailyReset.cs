@@ -1,11 +1,9 @@
 ﻿using System;
-using System.ComponentModel.DataAnnotations;
 
 namespace DestinyReset.ResetInfo.Models
 {
     public class DailyReset
     {
-        [DataType(DataType.Date)]
         public DateTime Reset { get; set; }
 
         public string Day { get; set; }
